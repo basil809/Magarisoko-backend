@@ -21,12 +21,19 @@ const { error } = require('console');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(require("cookie-parser")());
 app.use(
   cors({
     origin: "https://magari-soko.vercel.app",
     credentials: true
   })
 );
+
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: true, // IMPORTANT for production
+  sameSite: "None" // REQUIRED for cross-site cookies
+});
 
 const upload = multer({ dest: 'uploads/' }); // the new images from the dealer updating form will be stored.
 
