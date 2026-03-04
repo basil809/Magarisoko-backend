@@ -1,0 +1,21 @@
+# Environment variables
+.env
+
+# Node dependencies
+node_modules/
+
+# User uploads
+uploads/
+
+# Java JDK
+Oracle_JDK-23/
+
+# VS Code settings
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
