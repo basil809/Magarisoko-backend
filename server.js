@@ -21,6 +21,13 @@ const { error } = require('console');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(
+  cors({
+    origin: "https://magari-soko.vercel.app",
+    credentials: true
+  })
+);
+
 const upload = multer({ dest: 'uploads/' }); // the new images from the dealer updating form will be stored.
 
 //const dealerVehicles = require('./models/DealerVehicles'); Adjust path as neededn
