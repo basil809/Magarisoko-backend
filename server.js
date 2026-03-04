@@ -13,13 +13,13 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const Tesseract = require('tesseract.js');
 const cookieParser = require('cookie-parser');
-const searchRoutes = require('./magarisoko-backend/routes/searchRoutes'); // Path to your route file
+const searchRoutes = require('../magarisoko-backend/routes/searchRoutes.js'); // Path to your route file
 const axios = require('axios');
 const moment = require ('moment');
 const { error } = require('console');
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
 const upload = multer({ dest: 'uploads/' }); // the new images from the dealer updating form will be stored.
 
@@ -29,12 +29,15 @@ const client = new OAuth2Client('YOUR_GOOGLE_CLIENT_ID');
 const SECRET_KEY = 'your_secret_key'; // Replace with your secret key
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/magarisoko', { 
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch((err) => {
-  console.error('Failed to connect to MongoDB:', err);
-});
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
+//mongoose.connect('mongodb://localhost:27017/magarisoko', { 
+//}).then(() => {
+//console.log('Connected to MongoDB');
+//}).catch((err) => {
+//  console.error('Failed to connect to MongoDB:', err);
+//});
 
 // ================= MPESA CONFIG =================
 const MPESA_CONFIG = {
@@ -2606,6 +2609,6 @@ app.post('/api/pending-subscriptions/:id/deny', async (req, res) => {
 
 
 // Start the server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
