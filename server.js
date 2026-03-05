@@ -1029,7 +1029,7 @@ app.post('/api/magari', uploadDealer.array('dealer_vehicle_image', 10), async (r
     // The catch block is used to handle any errors that occur during the execution of the try block.
     // It logs the error and sends an appropriate response to the client.
     console.error('Error uploading vehicle:', error);
-    res.status(500).json({ success: false, message: 'An error occurred during vehicle upload.' });
+    res.status(500).json({ success: false, message: 'An error occurred during vehicle upload.', error: error.message });
   }
 });
 
@@ -1267,7 +1267,7 @@ app.post ('/api/magariHire', uploadDealer.array('dealer_vehicle_image', 10), asy
   } catch (error) {
     // Log and send error response
     console.error('Error uploading vehicle:', error);
-    res.status(500).json({ success: false, message: 'An error occurred during vehicle upload.' });
+    res.status(500).json({ success: false, message: 'An error occurred during vehicle upload.', error: error.message });
   }
 });
 
