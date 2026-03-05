@@ -21,10 +21,13 @@ const { error } = require('console');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(require("cookie-parser")());
+
 app.use(
   cors({
-    origin: "https://magari-soko.vercel.app",
+    origin: [
+      "http://localhost:3000",
+      "https://magari-soko.vercel.app"
+    ],
     credentials: true
   })
 );
@@ -361,7 +364,6 @@ app.use(session({
 }));
 
 // Middleware
-app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
