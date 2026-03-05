@@ -414,10 +414,16 @@ app.use('/api', searchRoutes);
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+const sellUploadsDir = path.join(uploadsDir, 'sell_uploads');
+if (!fs.existsSync(sellUploadsDir)) fs.mkdirSync(sellUploadsDir, { recursive: true });
+
+const dealerUploadsDir = path.join(uploadsDir, 'dealer_uploads');
+if (!fs.existsSync(dealerUploadsDir)) fs.mkdirSync(dealerUploadsDir, { recursive: true });
+
 // Set up multer for sell.html file uploads
 const sellStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(uploadsDir, 'sell_uploads'));  // Store sell uploads in a specific folder
+    cb(null, sellUploadsDir);  // Store sell uploads in a specific folder
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);  // Generate a unique filename
@@ -428,13 +434,25 @@ const uploadSell = multer({ storage: sellStorage });
 // Set up multer for dealers.html file uploads
 const dealerStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(uploadsDir, 'dealer_uploads'));  // Store dealer uploads in a specific folder
+    cb(null, dealerUploadsDir);  // Store dealer uploads in a specific folder
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);  // Generate a unique filename
   }
 });
 const uploadDealer = multer({ storage: dealerStorage });
+
+// Middleware to handle multer errors
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err);
+    return res.status(400).json({ success: false, message: 'File upload error: ' + err.message, error: err.message });
+  } else if (err) {
+    console.error('Upload error:', err);
+    return res.status(500).json({ success: false, message: 'Upload error: ' + err.message, error: err.message });
+  }
+  next();
+};
 
 // Serve static files (e.g., your HTML files)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -988,7 +1006,15 @@ app.delete('/api/dealerVehicles/:id', async (req, res) => {
 
 
 // POST route to add a new Admin Vehicle
-app.post('/api/magari', uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
+app.post('/api/magari', (req, res, next) => {
+  uploadDealer.array('dealer_vehicle_image', 10)(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ success: false, message: 'File upload error: ' + err.message, error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     // Check if files are uploaded
     if (!req.files || req.files.length === 0) {
@@ -1229,7 +1255,15 @@ app.delete('/api/magari/:id', async (req, res) => {
 });
 
 //POST route to add a new Vehicle for hire
-app.post ('/api/magariHire', uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
+app.post ('/api/magariHire', (req, res, next) => {
+  uploadDealer.array('dealer_vehicle_image', 10)(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ success: false, message: 'File upload error: ' + err.message, error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     // Check if files are uploaded
     if (!req.files || req.files.length === 0) {
@@ -2615,6 +2649,16 @@ app.post('/api/pending-subscriptions/:id/deny', async (req, res) => {
         console.error('Deny error:', err);
         res.status(500).json({ success: false });
     }
+});
+
+// Global error handler middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'An unexpected error occurred',
+    error: process.env.NODE_ENV === 'production' ? {} : err
+  });
 });
 
 
