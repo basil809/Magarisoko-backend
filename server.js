@@ -32,12 +32,6 @@ app.use(
   })
 );
 
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: true, // IMPORTANT for production
-  sameSite: "None" // REQUIRED for cross-site cookies
-});
-
 const upload = multer({ dest: 'uploads/' }); // the new images from the dealer updating form will be stored.
 
 //const dealerVehicles = require('./models/DealerVehicles'); Adjust path as neededn
