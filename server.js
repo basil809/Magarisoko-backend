@@ -409,6 +409,15 @@ app.post('/admin-login', (req, res) => {
 
 // Register Routes
 app.use('/api', searchRoutes);
+// Storing the images in the cloudinary
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Ensure the uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -432,12 +441,11 @@ const sellStorage = multer.diskStorage({
 const uploadSell = multer({ storage: sellStorage });
 
 // Set up multer for dealers.html file uploads
-const dealerStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, dealerUploadsDir);  // Store dealer uploads in a specific folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);  // Generate a unique filename
+const dealerStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "magarisoko_vehicles", // Optional: specify a folder in Cloudinary
+    allow_formats: ["jpg", "jpeg", "png", "webp"] // Optional: specify allowed formats
   }
 });
 const uploadDealer = multer({ storage: dealerStorage });
