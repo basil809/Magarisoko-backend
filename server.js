@@ -1959,8 +1959,9 @@ app.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, SECRET_KEY, { expiresIn: '1h' });
 
-    // Set token in a cookie
-    res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+    // Set token in a cookie with cross-site support
+    // sameSite=None is required for cross-site cookies when using credentials
+    res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'None' });
 
     // Respond with JSON, not redirect
     res.json({ success: true, username: user.username });
