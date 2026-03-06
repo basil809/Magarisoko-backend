@@ -350,10 +350,12 @@ const DealerSubscription = mongoose.model('DealerSubscription', dealerSubscripti
 
 //Getting DealerVehicles 
 // Set up session middleware
+const MongoStore = require('connect-mongo');
 app.use(session({
   secret: '7d5c31e6d3c6efea1c6c0b4b6e3d7b8a51e2f45a5d9b9b6d7b5c5b3d8e1c3a2f', // Replace with a secure secret key
   resave: false,
   saveUninitialized: true,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: { secure: false } // Set to true if using HTTPS
 }));
 
@@ -1668,7 +1670,7 @@ app.post('/dealer-login', async (req, res) => {
       }
   } catch (error) {
       console.error('Error during dealer login:', error);
-      res.status(500).send("<script>alert('An error occurred. Please try again.'); window.location.href = '/join_us.html';</script>");
+      res.status(500).json({ success: false, message: 'An error occurred. Please try again.', error: error.message });
   }
 });
 
