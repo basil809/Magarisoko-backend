@@ -16,6 +16,7 @@ const cookieParser = require('cookie-parser');
 const searchRoutes = require('./routes/searchRoutes'); // Path to your route file
 const axios = require('axios');
 const moment = require ('moment');
+const MongoStore = require('connect-mongo');
 const { error } = require('console');
 
 const app = express();
@@ -349,13 +350,11 @@ const dealerSubscriptionSchema = new mongoose.Schema({
 const DealerSubscription = mongoose.model('DealerSubscription', dealerSubscriptionSchema);
 
 //Getting DealerVehicles 
-// Set up session middleware
-const MongoStore = require('connect-mongo');
+// Set up session middleware (using in-memory store for now)
 app.use(session({
   secret: '7d5c31e6d3c6efea1c6c0b4b6e3d7b8a51e2f45a5d9b9b6d7b5c5b3d8e1c3a2f', // Replace with a secure secret key
   resave: false,
   saveUninitialized: true,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: { secure: false } // Set to true if using HTTPS
 }));
 
@@ -392,6 +391,36 @@ const authenticateToken = async (req, res, next) => {
   } catch (err) {
     console.error('Auth error:', err);
     return res.status(403).json({ message: 'Invalid token' });
+  }
+};
+
+// Middleware to authenticate JWT token for dealers
+const authenticateDealerToken = async (req, res, next) => {
+  try {
+    const token = req.cookies.dealerToken;
+    if (!token) {
+      return res.status(401).json({ message: 'No dealer token' });
+    }
+
+    const decoded = jwt.verify(token, SECRET_KEY);
+
+    console.log('Decoded Dealer JWT:', decoded);
+
+    if (!mongoose.Types.ObjectId.isValid(decoded.dealerId)) {
+      return res.status(401).json({ message: 'Invalid dealer ID in token' });
+    }
+
+    const dealer = await Dealer.findById(decoded.dealerId);
+
+    if (!dealer) {
+      return res.status(401).json({ message: 'Dealer not found' });
+    }
+
+    req.dealer = dealer;
+    next();
+  } catch (err) {
+    console.error('Dealer auth error:', err);
+    return res.status(403).json({ message: 'Invalid dealer token' });
   }
 };
 
@@ -1635,9 +1664,9 @@ app.put('/api/dealers/:id', async (req, res) => {
 });
 
 
-// Handle dealer login
+// Handle dealer login using JWT
 app.post('/dealer-login', async (req, res) => {
-  console.log('Request Body', req.body); // Debugging: log the received body
+  console.log('Request Body', req.body);
   const { email, id_no } = req.body;
 
   try {
@@ -1654,24 +1683,35 @@ app.post('/dealer-login', async (req, res) => {
       });
 
       if (dealer) {
-          // Store dealer email and Id in session for later retrieval
-          req.session.dealerEmail = dealer.email; // Assuming you are using sessions
-          req.session.dealerId = dealer._id;
-          
-          // Read and modify the dealers.html file
-          const dealersPath = path.join(__dirname, 'public', 'dealers.html');
-          let dealersHtml = fs.readFileSync(dealersPath, 'utf8');
-          dealersHtml = dealersHtml.replace('{{username}}', dealer.username);
+          // Create JWT token for dealer
+          const token = jwt.sign({ dealerId: dealer._id }, SECRET_KEY, { expiresIn: '1h' });
 
-          // Send the modified HTML content directly in the response
-          res.send(dealersHtml);
+          // Set token in a cookie with cross-site support
+          res.cookie('dealerToken', token, { httpOnly: true, secure: true, sameSite: 'None' });
+
+          // Respond with JSON
+          res.json({ success: true, username: dealer.username, redirect: '/dealers.html' });
       } else {
-          return res.send("<script>alert('Invalid email or ID number. Please try again or sign up as a dealer first.'); window.location.href = '/join_us.html';</script>");
+          return res.status(401).json({ success: false, message: 'Invalid email or ID number. Please try again or sign up as a dealer first.' });
       }
   } catch (error) {
       console.error('Error during dealer login:', error);
       res.status(500).json({ success: false, message: 'An error occurred. Please try again.', error: error.message });
   }
+});
+
+// Dealer logout
+app.get('/dealer-logout', (req, res) => {
+  res.clearCookie('dealerToken');
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Check dealer login status
+app.get('/check-dealer-login-status', authenticateDealerToken, (req, res) => {
+  res.json({
+    loggedIn: true,
+    username: req.dealer.username
+  });
 });
 
 
