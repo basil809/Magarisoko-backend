@@ -430,12 +430,11 @@ const dealerUploadsDir = path.join(uploadsDir, 'dealer_uploads');
 if (!fs.existsSync(dealerUploadsDir)) fs.mkdirSync(dealerUploadsDir, { recursive: true });
 
 // Set up multer for sell.html file uploads
-const sellStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, sellUploadsDir);  // Store sell uploads in a specific folder
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);  // Generate a unique filename
+const sellStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "magarisoko_vehicles", // Optional: specify a folder in Cloudinary
+    allow_formats: ["jpg", "jpeg", "png", "webp"] // Optional: specify allowed formats
   }
 });
 const uploadSell = multer({ storage: sellStorage });
@@ -1018,21 +1017,26 @@ app.post('/api/magari', (req, res, next) => {
   uploadDealer.array('dealer_vehicle_image', 10)(req, res, (err) => {
     if (err) {
       console.error('Multer error:', err);
-      return res.status(400).json({ success: false, message: 'File upload error: ' + err.message, error: err.message });
+      return res.status(400).json({
+        success: false,
+        message: 'File upload error: ' + err.message
+      });
     }
     next();
   });
 }, async (req, res) => {
   try {
-    // Check if files are uploaded
+
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ success: false, message: 'No files were uploaded.' });
+      return res.status(400).json({
+        success: false,
+        message: 'No files were uploaded.'
+      });
     }
 
-    // Map through the files to get their paths
-    const imagePaths = req.files.map(file => 'uploads/dealer_uploads/' + file.filename);
+    // ✅ Correct for Cloudinary
+    const imagePaths = req.files.map(file => file.path);
 
-    // Create a new Vehicle document
     const vehicle = new Magari({
       dealerId: req.body.dealerId,
       vehicle_make: req.body.vehicle_make,
@@ -1050,20 +1054,24 @@ app.post('/api/magari', (req, res, next) => {
       type_of_fuel: req.body.type_of_fuel,
       engine_capacity: req.body.engine_capacity,
       vehicle_description: req.body.vehicle_description,
-      vehicle_images: imagePaths // Save array of image paths in MongoDB
+      vehicle_images: imagePaths
     });
 
-    // Save the vehicle to the database
     await vehicle.save();
 
-    // Send success response
-    res.status(200).json({ success: true, message: 'Vehicle uploaded successfully.' });
+    res.status(200).json({
+      success: true,
+      message: 'Vehicle uploaded successfully.'
+    });
+
   } catch (error) {
-    // Log and send error response
-    // The catch block is used to handle any errors that occur during the execution of the try block.
-    // It logs the error and sends an appropriate response to the client.
     console.error('Error uploading vehicle:', error);
-    res.status(500).json({ success: false, message: 'An error occurred during vehicle upload.', error: error.message });
+
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred during vehicle upload.',
+      error: error.message
+    });
   }
 });
 
