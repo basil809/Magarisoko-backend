@@ -449,6 +449,20 @@ const dealerStorage = new CloudinaryStorage({
 });
 const uploadDealer = multer({ storage: dealerStorage });
 
+// Additional storage for dealer sign-up ID cards (local disk) so we can run OCR
+const idCardStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads', 'idcards');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + file.originalname;
+    cb(null, unique);
+  }
+});
+const uploadIdCards = multer({ storage: idCardStorage });
+
 // Middleware to handle multer errors
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -1513,10 +1527,18 @@ app.get('/vehicles/:type', async (req, res) => {
 });
 
 // Handle dealer sign-up
-app.post('/signD', uploadDealer.array('images'), async (req, res) => {
+app.post('/signD', uploadIdCards.array('images'), async (req, res) => {
   try {
     const { username, id_no, email } = req.body;
     const images = req.files;
+
+    if (!username || !id_no || !email) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    if (!images || images.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please upload at least one ID image' });
+    }
 
     // Check if a dealer with the same email or ID number already exists
     const existingDealer = await Dealer.findOne({ $or: [{ email }, { id_no }] });
@@ -1530,9 +1552,10 @@ app.post('/signD', uploadDealer.array('images'), async (req, res) => {
 
     // Process ID card images using Tesseract
     for (const image of images) {
+      // image.path is the local file path created by multer
       const text = await Tesseract.recognize(image.path, 'eng');
       idCardData += text.data.text;
-      fs.unlinkSync(image.path); // Remove the image after processing
+      try { fs.unlinkSync(image.path); } catch (_) {}
     }
 
     // Check if the ID card data matches the input username and ID number
@@ -1556,8 +1579,8 @@ app.post('/signD', uploadDealer.array('images'), async (req, res) => {
     // Send a success response
     res.json({ success: true, message: 'Submission successful. Proceed to login!' });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ success: false, message: 'An error occurred. Please try again.' });
+    console.error('Error in /signD:', error);
+    res.status(500).json({ success: false, message: 'An error occurred. Please try again.', error: error.message });
   }
 });
 
