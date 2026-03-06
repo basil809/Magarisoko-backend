@@ -808,7 +808,7 @@ app.post('/api/dealerVehicles', uploadDealer.array('dealer_vehicle_image', 10), 
       }
 
       // Map through the files to get their paths
-      const imagePaths = req.files.map(file => 'uploads/dealer_uploads/' + file.filename);
+     const imagePaths = req.files.map(file => file.path);
 
       // Create a new Vehicle document
       const vehicle = new DealerVehicle({
