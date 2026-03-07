@@ -2038,7 +2038,7 @@ app.post('/login', async (req, res) => {
 });
 
 //code for logging out users when they click logout
-app.post('/logout', (req, res) => {
+app.get('/logout', (req, res) => {
   res.clearCookie('token'); // Clear the JWT cookie (or use your cookie name)
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 });
