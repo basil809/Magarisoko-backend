@@ -2051,6 +2051,7 @@ app.get('/api/user-info', authenticateToken, async (req, res) => {
     const user = req.user; // comes from authenticateToken
 
     res.json({
+      _id: user._id,
       username: user.username,
       email: user.email,
       vehicles: [],          // plug in later
