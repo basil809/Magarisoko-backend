@@ -1332,8 +1332,8 @@ app.post ('/api/magariHire', (req, res, next) => {
         return res.status(400).json({ success: false, message: 'No files were uploaded.' });
     }
 
-    // Map through the files to get their paths
-    const imagePaths = req.files.map(file => 'uploads/dealer_uploads/' + file.filename);
+    //To store the uploaded images to cloudinary and get the image URLs
+    const imagePaths = req.files.map(file => file.path);
 
     // Create a new Vehicle document
     const vehicle = new CarHire({
