@@ -537,7 +537,8 @@ app.post('/api/vehicles', authenticateToken, uploadDealer.array('dealer_vehicle_
       return res.status(400).json({ success: false, message: 'No files were uploaded.' });
     }
 
-    const imagePaths = req.files.map(file => 'uploads/dealer_uploads/' + file.filename);
+    //Store the uploaded images in the cloudinary and get their URLs
+    const imagePaths = req.files.map(file => file.path);
 
     const vehicle = new Vehicle({
       dealerId: req.user?._id || req.body.dealerId,
