@@ -704,10 +704,10 @@ app.get('/api/vehicles/:id', async (req, res) => {
 // Fetch vehicles for the logged-in user
 app.get('/api/user-vehicles', authenticateToken, async (req, res) => {
   try {
-    const username = req.user.username; // ✅ comes from JWT middleware
+    const userId = req.user._id; // Use user ID for matching
 
-    // Match vehicles belonging to this user
-    const vehicles = await Vehicle.find({ dealer_name: username });
+    // Match vehicles belonging to this user by dealerId
+    const vehicles = await Vehicle.find({ dealerId: userId });
 
     res.json({
       success: true,
