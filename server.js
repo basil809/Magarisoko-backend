@@ -2370,6 +2370,7 @@ app.post('/api/mpesa/subscribe', authenticateToken, uploadDealer.array('dealer_v
     });
   }
 });
+
 //manual payment route: dealers enter mpesa code themselves
 app.post('/api/dealer/mpesa/manual', authenticateDealerToken, uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
     try {
@@ -2425,7 +2426,7 @@ app.post('/api/dealer/mpesa/manual', authenticateDealerToken, uploadDealer.array
             engine_capacity: req.body.engine_capacity,
             vehicle_description: req.body.vehicle_description,
             vehicle_images: imagePaths,
-            dealerId: dealerId
+            dealerId: userId
           },
           createdAt: new Date()
         });
