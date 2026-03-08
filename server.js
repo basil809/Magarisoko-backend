@@ -2068,8 +2068,23 @@ app.get('/api/users', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
+//code to fetch the dealers info and user it in the dashboard
+app.get('/api/dealer-info', authenticateDealerToken, async (req, res) => {
+  try {
+    const dealer = req.dealer;
 
-// Code to fetch the dealer's info from the DB and display it in account.html
+    res.json({
+      _id: dealer._id,
+      username: dealer.username,
+      email: dealer.email
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch dealer info' });
+  }
+});
+
+// Code to fetch the #### info from the DB and display it in account.html
 app.get('/user-info', authenticateToken, async (req, res) => {
   try {
       // Retrieve userId from session
