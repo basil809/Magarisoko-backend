@@ -2376,9 +2376,9 @@ app.post('/api/dealer/mpesa/manual', authenticateDealerToken, uploadDealer.array
         const { plan, phone, mpesaCode } = req.body;
         const userId = req.dealer._id;
         const planPrices = {
-            basic: 10,
-            standard: 20,
-            premium: 30
+            basic: 500,
+            standard: 800,
+            premium: 2500
         };
 
         const amount = planPrices[plan];
