@@ -1691,7 +1691,7 @@ app.post('/dealer-login', async (req, res) => {
           res.cookie('dealerToken', token, { httpOnly: true, secure: true, sameSite: 'None' });
 
           // Respond with JSON
-          res.json({ success: true, username: dealer.username, redirect: '/dealers.html' });
+          res.json({ success: true, message:'Login Successful', username: dealer.username, redirect: '/dealers.html' });
       } else {
           return res.status(401).json({ success: false, message: 'Invalid email or ID number. Please try again or sign up as a dealer first.' });
       }
