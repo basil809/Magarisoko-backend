@@ -196,7 +196,7 @@ const dealerVehicleSchema = new mongoose.Schema({
   engine_capacity: String,
   vehicle_description: String,
   vehicle_images: [String]// Array of image paths
-});
+}, { collection: 'dealervehicles' });
 
 const DealerVehicle = mongoose.model('DealerVehicle', dealerVehicleSchema);
 
