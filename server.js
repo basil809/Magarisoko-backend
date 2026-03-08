@@ -260,8 +260,10 @@ const Subscription = mongoose.model('Subscription', subscriptionSchema);
 const PendingSubscriptionSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
     required: true
+  },
+  dealerName: {
+    type: String
   },
   plan: {
     type: String,
@@ -2408,6 +2410,7 @@ app.post('/api/dealer/mpesa/manual', authenticateDealerToken, uploadDealer.array
           checkoutRequestID: mpesaCode,
           status: 'pending',
           isDealer: true,
+          dealerName: req.dealer.username,
           vehicleData: {
             vehicle_make: req.body.vehicle_make,
             vehicle_model: req.body.vehicle_model,
