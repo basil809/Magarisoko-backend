@@ -2311,8 +2311,8 @@ app.post('/api/mpesa/subscribe', authenticateToken, uploadDealer.array('dealer_v
       });
     }
 
-    // Get image paths if files were uploaded
-    const imagePaths = req.files ? req.files.map(file => 'uploads/dealer_uploads/' + file.filename) : [];
+    // Get image File Paths from Cloudinary upload
+    const imagePaths = req.files ? req.files.map(file => file.path) : [];
 
     // Save pending subscription WITH vehicle data (create new document to avoid accidental overwrites)
     try {
@@ -2370,6 +2370,73 @@ app.post('/api/mpesa/subscribe', authenticateToken, uploadDealer.array('dealer_v
     });
   }
 });
+//manual payment route: dealers enter mpesa code themselves
+app.post('/api/dealer/mpesa/manual', authenticateDealerToken, uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
+    try {
+        const { plan, phone, mpesaCode } = req.body;
+        const userId = req.dealer._id;
+        const planPrices = {
+            basic: 10,
+            standard: 20,
+            premium: 30
+        };
+
+        const amount = planPrices[plan];
+
+        if (!amount) {
+            return res.status(400).json({ success: false, message: 'Invalid subscription plan' });
+        }
+
+        if (!mpesaCode) {
+            return res.status(400).json({ success: false, message: 'Mpesa code required' });
+        }
+        // Get image File Paths from Cloudinary upload
+        const imagePaths = req.files ? req.files.map(file => file.path) : [];
+
+        // Prevent accidental overwrites: if a pending with same mpesaCode exists, reject
+        const existing = await PendingSubscription.findOne({ checkoutRequestID: mpesaCode });
+        if (existing) {
+          console.warn('Manual pending subscription already exists for code:', mpesaCode);
+          return res.status(409).json({ success: false, message: 'This M-Pesa code has already been submitted' });
+        }
+        const pending = new PendingSubscription({
+          userId,
+          plan,
+          amount,
+          phone,
+          checkoutRequestID: mpesaCode,
+          status: 'pending',
+          isDealer: true,
+          vehicleData: {
+            vehicle_make: req.body.vehicle_make,
+            vehicle_model: req.body.vehicle_model,
+            vehicle_price: req.body.vehicle_price,
+            dealer_name: req.body.dealer_name,
+            dealer_id: req.body.dealer_id,
+            status: req.body.status,
+            color: req.body.color,
+            Interior: req.body.Interior,
+            kilometers: req.body.kilometers,
+            transmission: req.body.transmission,
+            phone_number: req.body.phone_number || req.dealer?.phone_number,
+            dealer_email: req.body.dealer_email || req.dealer?.email,
+            vehicle_year: req.body.vehicle_year,
+            type_of_fuel: req.body.type_of_fuel,
+            engine_capacity: req.body.engine_capacity,
+            vehicle_description: req.body.vehicle_description,
+            vehicle_images: imagePaths,
+            dealerId: dealerId
+          },
+          createdAt: new Date()
+        });
+        await pending.save();
+        console.log('Manual pending subscription created:', mpesaCode);
+        res.json({ success: true, message: 'Manual subscription recorded, awaiting admin approval.' });
+    } catch (error) {
+        console.error('Manual subscription error:', error);
+        res.status(500).json({ success: false, message: 'Failed to record manual subscription' });
+    }
+});
 
 // manual payment route: users enter mpesa code themselves
 app.post('/api/mpesa/manual', authenticateToken, uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
@@ -2392,7 +2459,8 @@ app.post('/api/mpesa/manual', authenticateToken, uploadDealer.array('dealer_vehi
             return res.status(400).json({ success: false, message: 'Mpesa code required' });
         }
 
-        const imagePaths = req.files ? req.files.map(file => 'uploads/dealer_uploads/' + file.filename) : [];
+        // Get image File Paths from Cloudinary upload
+        const imagePaths = req.files ? req.files.map(file => file.path) : [];
 
         // Prevent accidental overwrites: if a pending with same mpesaCode exists, reject
         const existing = await PendingSubscription.findOne({ checkoutRequestID: mpesaCode });
@@ -2408,6 +2476,7 @@ app.post('/api/mpesa/manual', authenticateToken, uploadDealer.array('dealer_vehi
           phone,
           checkoutRequestID: mpesaCode,
           status: 'pending',
+          isDealer: false,
           vehicleData: {
             vehicle_make: req.body.vehicle_make,
             vehicle_model: req.body.vehicle_model,
@@ -2632,35 +2701,28 @@ app.get('/api/check-subscription', authenticateToken, async (req, res) => {
 });
 
 // Check dealer subscription endpoint
-app.get('/api/check-dealer-subscription', async (req, res) => {
-    try {
-        const dealerId = req.session.dealerId;
-        console.log('Checking subscription for dealer:', dealerId);
-        
-        if (!dealerId) {
-            return res.json({ subscribed: false });
-        }
-        
-        // Check both DealerSubscription and Subscription models
-        const dealerSub = await DealerSubscription.findOne({
-            dealerId: dealerId,
-            status: 'active',
-            expiryDate: { $gt: new Date() }
-        });
+app.get('/api/check-dealer-subscription', authenticateDealerToken, async (req, res) => {
+  try {
+    const dealerId = req.dealer._id;
 
-        const userSub = await Subscription.findOne({
-            userId: dealerId,
-            status: 'active',
-            expiryDate: { $gt: new Date() }
-        });
+    console.log('Checking subscription for dealer:', dealerId);
 
-        const subscribed = !!(dealerSub || userSub);
-        console.log('Dealer subscription found:', subscribed);
-        res.json({ subscribed });
-    } catch (err) {
-        console.error('Check dealer subscription error:', err);
-        res.status(500).json({ subscribed: false, error: err.message });
-    }
+    const dealerSub = await DealerSubscription.findOne({
+      dealerId: dealerId,
+      status: 'active',
+      expiryDate: { $gt: new Date() }
+    });
+
+    const subscribed = !!dealerSub;
+
+    console.log('Dealer subscription found:', subscribed);
+
+    res.json({ subscribed });
+
+  } catch (err) {
+    console.error('Check dealer subscription error:', err);
+    res.status(500).json({ subscribed: false, error: err.message });
+  }
 });
 
 // Admin endpoints for pending subscription approvals
