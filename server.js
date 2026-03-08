@@ -935,13 +935,9 @@ app.get('/api/dealerVehicles', async (req, res) => {
 
 // Fetch vehicles for the logged-in dealer and display them in the dealer.html page
 // Fetch vehicles for the logged-in dealer
-app.get('/dealer-vehicles', async (req, res) => {
+app.get('/dealer-vehicles', authenticateDealerToken, async (req, res) => {
   try {
-      const dealerEmail = req.session.dealerEmail;
-
-      if (!dealerEmail) {
-          return res.status(400).json({ success: false, message: 'Dealer email not found in session.' });
-      }
+      const dealerEmail = req.dealer.email;
 
       const vehicles = await DealerVehicle.find({ dealer_email: dealerEmail });
 
