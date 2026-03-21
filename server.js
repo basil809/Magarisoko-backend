@@ -803,7 +803,7 @@ app.put('/api/User-vehicles/:id', async (req, res) => {
 //code for the loading of the form input FROM the dealers dashboard  into the MongoDB
 // POST route to add a new dealer vehicle
 // Route for handling dealers.html form submissions
-app.post('/api/dealerVehicles', uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
+app.post('/api/dealerVehicles', authenticateDealerToken, uploadDealer.array('dealer_vehicle_image', 10), async (req, res) => {
   try {
       // Check if files are uploaded
       if (!req.files || req.files.length === 0) {
@@ -813,9 +813,12 @@ app.post('/api/dealerVehicles', uploadDealer.array('dealer_vehicle_image', 10), 
       // Map through the files to get their paths
      const imagePaths = req.files.map(file => file.path);
 
+    // Get dealerId from JWT (SECURE)
+    const dealerId = req.dealer._id;
+
       // Create a new Vehicle document
       const vehicle = new DealerVehicle({
-          dealerId: req.body.dealerId,
+          dealerId: dealerId,
           vehicle_make: req.body.vehicle_make,
           vehicle_model: req.body.vehicle_model,
           vehicle_price: req.body.vehicle_price,
