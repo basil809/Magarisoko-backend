@@ -78,7 +78,7 @@ const vehicleSchema = new mongoose.Schema({
   status: String,
   Interior: String,
   vehicle_year: Number,
-  kilometers: Number,
+  kilometers: String,
   transmission: String,
   type_of_fuel: String,
   engine_capacity: String,
@@ -939,9 +939,9 @@ app.get('/api/dealerVehicles', async (req, res) => {
 // Fetch vehicles for the logged-in dealer
 app.get('/dealer-vehicles', authenticateDealerToken, async (req, res) => {
   try {
-      const dealerEmail = req.dealer.email;
+      const dealerId = req.dealer._id; // Use dealer ID for matching
 
-      const vehicles = await DealerVehicle.find({ dealer_email: dealerEmail });
+      const vehicles = await DealerVehicle.find({ dealerId: dealerId });
 
       if (Array.isArray(vehicles)) {
           res.json({ success: true, vehicles });
