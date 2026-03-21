@@ -2782,15 +2782,29 @@ app.post('/api/pending-subscriptions/:id/approve', async (req, res) => {
         // if the pending request contained vehicleData, create the vehicle now
         if (pending.vehicleData) {
             try {
-                const vehicle = new Vehicle({
-                    ...pending.vehicleData,
-                    dealerId: pending.userId._id
-                });
-                await vehicle.save();
-                console.log('Vehicle posted on approval:', vehicle._id);
+                if (pending.isDealer) {
+                    // ✅ Dealer → save in DealerVehicle
+                    const vehicle = new DealerVehicle({
+                        ...pending.vehicleData,
+                        dealerId: pending.userId   // IMPORTANT: use ObjectId directly
+                    });
+
+                    await vehicle.save();
+                    console.log('Dealer vehicle posted:', vehicle._id);
+
+                } else {
+                    // ✅ Client → save in Vehicle
+                    const vehicle = new Vehicle({
+                        ...pending.vehicleData,
+                        userId: pending.userId
+                    });
+
+                    await vehicle.save();
+                    console.log('Client vehicle posted:', vehicle._id);
+                }
+
             } catch (vehErr) {
                 console.error('Error posting vehicle on approval:', vehErr);
-                // continue anyway
             }
         }
 
